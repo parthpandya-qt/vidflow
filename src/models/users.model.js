@@ -65,14 +65,14 @@ userModel.pre("save", async function(next){
 userModel.methods.isPasswordCorrect = async function (password){
     return bcrypt.compare(password,this.password)
 }
-usersModel.methods.generateAccessToken = function (){
+userModel.methods.generateAccessToken = function (){
     return jwt.sign(
         {id:this._id, username:this.username , email:this.email},
         process.env.ACCESS_TOKEN_SECRET,
         {expiresIn:process.env.ACCESS_TOKEN_EXPIRY}
     )
 }
-usersModel.methods.generateRefreshToken = function (){
+userModel.methods.generateRefreshToken = function (){
     return jwt.sign(
         {id:this._id, username:this.username},
         process.env.REFRESH_TOKEN_SECRET,
