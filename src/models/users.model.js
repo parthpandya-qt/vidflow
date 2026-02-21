@@ -66,14 +66,14 @@ userModel.methods.isPasswordCorrect = async function (password){
 }
 userModel.methods.generateAccessToken = function (){
     return jwt.sign(
-        {id:this._id, userName:this.userName , email:this.email},
+        {_id:this._id, userName:this.userName , email:this.email},
         process.env.ACCESS_TOKEN_SECRET,
         {expiresIn:process.env.ACCESS_TOKEN_EXPIRY}
     )
 }
 userModel.methods.generateRefreshToken = function (){
     return jwt.sign(
-        {id:this._id, userName:this.userName},
+        {_id:this._id, userName:this.userName},
         process.env.REFRESH_TOKEN_SECRET,
         {expiresIn:process.env.REFRESH_TOKEN_EXPIRY}
     )

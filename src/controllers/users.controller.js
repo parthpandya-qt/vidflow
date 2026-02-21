@@ -5,7 +5,10 @@ import ApiResponce from "../utils/apiResponse.js";
 import upLoadonCloudinary from "../utils/claudinary.js";
 
 
-
+const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production"
+    };
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId);
@@ -103,8 +106,6 @@ const registerUser = asyncHandler(async (req, res) => {
     );
 });
 
-
-
 const loginUser = asyncHandler(async (req, res) => {
 // -  req body data
 // username or email
@@ -139,10 +140,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const loggedinUser = await User.findById(user._id)
         .select("-password -refreshToken");
 
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
-    };
+    
 
     return res
         .status(200)
@@ -161,20 +159,15 @@ const loginUser = asyncHandler(async (req, res) => {
         );
 });
 
-
-
 const logoutUser = asyncHandler(async (req, res) => {
 
     await User.findByIdAndUpdate(
         req.user._id,
-        { $unset: { refreshToken: 1 } },
+        { $unset: { refreshToken: undefined } },
         { new: true }
     );
 
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
-    };
+    
 
     return res
         .status(200)
@@ -189,5 +182,34 @@ const logoutUser = asyncHandler(async (req, res) => {
         );
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken
+    if(!incomingRefreshToken){
+        throw new ApiError(401,"unauthorized request")
+    }
 
-export { registerUser, loginUser, logoutUser };
+    const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET)
+    
+    const user = await User.findById(decodedToken?._id)
+
+    if(!user){
+        throw new ApiError(401,"unauthorized request")
+    }
+    if (user.refreshToken!==decodedToken) {
+        throw new ApiError(401,"unauthorized request")
+    }
+    const {accessToken,refreshToken}=generateAccessAndRefreshTokens()
+    
+    return res
+        .satatus(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponce(
+                200,
+                { accessToken, refreshToken },
+                "Access token refreshed successfully"
+            )
+        );
+})
+export { registerUser, loginUser, logoutUser,refreshAccessToken};
