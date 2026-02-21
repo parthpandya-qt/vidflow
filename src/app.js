@@ -8,18 +8,12 @@ app.use(cors({
     origin:process.env.CORS_ORIGIN,
     credentials:true
 }));
-// Skip body parsing for multipart — body-parser consumes the stream before multer
-app.use((req, res, next) => {
-  const isMultipart = (req.headers["content-type"] || "").includes("multipart/form-data");
-  if (isMultipart) return next();
-  express.json({ limit: "16kb" })(req, res, (err) => {
-    if (err) return next(err);
-    express.urlencoded({ limit: "16kb", extended: true })(req, res, next);
-  });
-});
+
+
+app.use(express.json({ limit: "20kb" }))
+app.use(express.urlencoded({ limit: "16kb", extended: true }))
 app.use(express.static("public"));
 app.use(cookieParser())
-
 
 
 

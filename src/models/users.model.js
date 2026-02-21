@@ -21,6 +21,10 @@ const userModel = new Schema (
         trim:true,
         
     },
+    password:{
+        type:String,
+        required:[true, "Password is required"]
+    },
     fullName:{
         type:String,
         required:true,
@@ -41,10 +45,7 @@ const userModel = new Schema (
 
         }
     ],
-    password:{
-        type:String,
-        required:[true, "Password is required"]
-    },
+    
     refreshToken:{
         type:String
     }
@@ -55,13 +56,11 @@ const userModel = new Schema (
     }
 
 )   
-userModel.pre("save", async function(next){
-    if(!this.isModified("password")){
-        return next()
-    }
-    this.password = await bcrypt.hash(this.password,10)
-    next()
-})
+userModel.pre("save", async function () {
+    if (!this.isModified("password")) return;
+
+    this.password = await bcrypt.hash(this.password, 10);
+});
 userModel.methods.isPasswordCorrect = async function (password){
     return bcrypt.compare(password,this.password)
 }
