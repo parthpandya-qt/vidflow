@@ -9,9 +9,9 @@ const generateAccessAndRefreshTokens = async(userId)=>{
     try {
         const user = await User.findById(userId)
         const accessToken=user.generateAccessToken()
-        const refreshToken=user.generateRefeshToken()
+        const refreshToken=user.generateRefreshToken()
         user.refreshToken=refreshToken
-        await user.save({validateBeforeSave:true})
+        await user.save({validateBeforeSave:false})
         return {accessToken, refreshToken}
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating Access and refresh token")
@@ -21,6 +21,8 @@ const generateAccessAndRefreshTokens = async(userId)=>{
 
 
 const registerUser = asyncHandler(async (req, res) => {
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files);
     // get user details from frontend
     // validation - not empty
     // check if user already exists: username, email
@@ -43,18 +45,18 @@ const registerUser = asyncHandler(async (req, res) => {
     if (existedUser) {
         throw new ApiError(409, "User with the same email or username already exists");
     }
-    const localAvatarPath = req.files.avatar[0].path
-    const localcoverImagePath = req.files.coveraImage[0].path
+    const localAvatarPath = req.files?.avatar?.[0]?.path
+    const localCoverImagePath = req.files?.coverImage?.[0]?.path
     if (!localAvatarPath){
         throw new ApiError(409, "avatar image is required" )
     }
-    const avatar=upLoadonCloudinary(localAvatarPath)
-    const coverImage=upLoadonCloudinary(localcoverImagePath)
+    const avatar= await upLoadonCloudinary(localAvatarPath)
+    const coverImage= await upLoadonCloudinary(localCoverImagePath)
 
     if(!avatar){
         throw new ApiError(409, "avatar image is required" )
     }
-    const user = User.create({
+    const user = await User.create({
         userName:userName.toLowerCase(),
         avatar:avatar.url,
         coverImage:coverImage?.url || "",
@@ -63,7 +65,7 @@ const registerUser = asyncHandler(async (req, res) => {
         fullName
 
     })
-    const createdUser = User.findById(user._id).select(
+    const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
     if(!createdUser){
@@ -82,7 +84,7 @@ const loginUser = asyncHandler(async (req,res)=>{
 // password check
 // access and refresh token
 // send them in secure cookies
-const {email,password,userName} = req.body()
+const {email,password,userName} = req.body;
     if (!(email || userName)){
         throw new ApiError(400, "username or email is required")
 
@@ -93,12 +95,12 @@ const {email,password,userName} = req.body()
     if(!user){
         throw new ApiError(404, "username or email is required")
     }
-    const isPasswordValid = await user.isPasswordCorrec(password)
+    const isPasswordValid = await user.isPasswordCorrect(password)
     if(!isPasswordValid){
         throw new ApiError(401, "invalid user credentials")
     }
     const {refreshToken,accessToken}=await generateAccessAndRefreshTokens(user._id)
-    const loggedinUser=User.findById(user._id).select("-password -refreshToken")
+    const loggedinUser= await User.findById(user._id).select("-password -refreshToken")
     const options = {
         httpOnly: true,
         secure: true
@@ -126,7 +128,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
     // find user in db and remove refresh token from db
     // clear cookies
     // send response
-    User.findByIdAndUpdate(req.user._id, 
+    await User.findByIdAndUpdate(req.user._id, 
         {
             $set:{refreshToken:undefined}
         },
@@ -134,13 +136,8 @@ const logoutUser = asyncHandler(async (req,res)=>{
             new:true
         }
     )
-    User.findByIdAndUpdate(req.user._id, 
-        {
-            $set:{refreshToken:undefined}
-        },
-        {
-            new:true
-        })
+
+    
     const options = {
         httpOnly: true,
         secure: true
@@ -148,7 +145,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
     return res
     .status(200)
     .clearCookie("accessToken",options)
-    .clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
     .json(new ApiResponce(200,{},"User logged out"))
     })
     
