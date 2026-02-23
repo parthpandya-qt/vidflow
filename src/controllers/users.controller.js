@@ -196,7 +196,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if(!user){
         throw new ApiError(401,"unauthorized request")
     }
-    if (user.refreshToken!==incomingRefreshToken) {
+    if (user?.refreshToken!==incomingRefreshToken) {
         throw new ApiError(401,"unauthorized request")
     }
     const {accessToken,refreshToken}= await generateAccessAndRefreshTokens(user._id)
@@ -412,13 +412,13 @@ const getUserwatchHistory = asyncHandler(async(req,res)=>{
     const user = await User.aggregate([
         {
             $match:{
-                _id : new mangoose.Types.ObjectId(req.user_id)
+                _id : new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {
             $lookup:{
                 from:"videos",
-                localFielsd:"watchHistory",
+                localField:"watchHistory",
                 foreignField:"_id",
                 as:"watchHistory",
                 pipeline:[{
@@ -436,20 +436,21 @@ const getUserwatchHistory = asyncHandler(async(req,res)=>{
                             }
                         }]
                     }
-                }]
-            }
-            
-            
-        },
-        {
+                },
+            {
             $addFields:{
                 owner:{
                     $first:"$owner"
                 }
             }
+        }]
+            }
+            
+            
         }
+        
     ])
-    return res.swtatus(200).json(new ApiResponce(200,user[0].watchHistory,"watch history fetched successfully"))
+    return res.status(200).json(new ApiResponce(200,user[0].watchHistory,"watch history fetched successfully"))
 })
 export { 
     registerUser, 
