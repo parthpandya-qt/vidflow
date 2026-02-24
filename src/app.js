@@ -20,8 +20,17 @@ app.use(cookieParser())
 
 
 import userRouter from "./routes/users.route.js";
-//routes declaration
-app.use("/api/v1/users",userRouter)
+import likeRouter from "./routes/like.route.js";
+import tweetRouter from "./routes/tweet.route.js";
+import dashBoardRouter from "./routes/dashBoard.route.js";
+import commentRouter from "./routes/comment.route.js";
+import subscriptionRouter from "./routes/subscription.route.js";
 
+app.use("/api/v1/users",userRouter)
+app.use("/api/v1/likes",likeRouter)
+app.use("/api/v1/tweets",tweetRouter)
+app.use("/api/v1/dashboard",dashBoardRouter)
+app.use("/api/v1/comments",commentRouter)
+app.use("/api/v1/subscription",subscriptionRouter)
 
 export default app;
