@@ -11,9 +11,10 @@ import  ApiResponse  from "../utils/apiResponse.js";
 
 
 const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
-    };
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+};
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId);
