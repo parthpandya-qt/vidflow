@@ -16,10 +16,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5174",
-      "https://vidflow-ashy.vercel.app",
-    ],
+    origin: process.env.CORS_ORIGIN,
     credentials: true,
   })
 );
@@ -38,5 +35,19 @@ app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/healthcheck", healthcheckRouter);
+
+// Global JSON error handler — converts all ApiErrors into clean JSON responses
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  return res.status(statusCode).json({
+    success: false,
+    statusCode,
+    message,
+    errors: err.errors || [],
+    data: null,
+  });
+});
 
 export default app;
