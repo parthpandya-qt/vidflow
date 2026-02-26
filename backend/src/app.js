@@ -16,7 +16,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: [
+      "http://localhost:5174",
+      "https://vidflow-ashy.vercel.app",
+    ],
     credentials: true,
   })
 );
