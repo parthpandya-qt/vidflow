@@ -1,27 +1,33 @@
-// this is custom middleware
-
-import ApiError from "../utils/apiErrors.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
-import {User} from "../models/users.model.js";
-export const verifyJwt = asyncHandler(async(req,_,next)=>{
-    try {
-        const token = req.cookies?.accessToken|| req.header("Authorization")?.replace("Bearer " , "")
-        if (!token){
-            throw new ApiError(401, "unauthorized access")
-        
-        }
-        const decodeToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
-        const user = await User.findById(decodeToken?._id).select("-password -refreshToken")
-        if(!user){
-            throw new ApiError(401, "invalid access token")
-        }
-        req.user=user
-        next()
-    } catch (error) {
-        throw new ApiError(401, error.message || "invalid access token")
+import { User } from "../models/users.model.js";
+
+
+export const verifyJwt = asyncHandler(async (req, res, next) => {
+    const token =
+        req.cookies?.accessToken ||
+        req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized access" });
     }
-})
 
+    try {
+        const decodedToken = jwt.verify(
+            token,
+            process.env.ACCESS_TOKEN_SECRET
+        );
 
+        const user = await User.findById(decodedToken?._id)
+            .select("-password -refreshToken");
 
+        if (!user) {
+            return res.status(401).json({ message: "Invalid access token" });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid access token" });
+    }
+});
