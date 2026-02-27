@@ -11,9 +11,11 @@ import  ApiResponse  from "../utils/apiResponse.js";
 
 
 const options = {
-  httpOnly: true,
-  secure: true,
-  sameSite: "none",
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
 };
 const generateAccessAndRefreshTokens = async (userId) => {
     try {

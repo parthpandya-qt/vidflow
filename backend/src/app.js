@@ -36,8 +36,7 @@ app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/healthcheck", healthcheckRouter);
 
-// Global JSON error handler — converts all ApiErrors into clean JSON responses
-// eslint-disable-next-line no-unused-vars
+
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
