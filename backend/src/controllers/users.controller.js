@@ -12,10 +12,9 @@ import  ApiResponse  from "../utils/apiResponse.js";
 
 const options = {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -151,10 +150,10 @@ const loginUser = asyncHandler(async (req, res) => {
     
 
     return res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json(
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
         new ApiResponse(
           200,
           {
