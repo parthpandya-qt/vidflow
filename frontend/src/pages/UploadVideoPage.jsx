@@ -61,7 +61,7 @@ export default function UploadVideoPage() {
                         <div className="form-group">
                             <label className="form-label">Description</label>
                             <textarea className="form-input" placeholder="Describe your video..." rows={4}
-                                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
                         </div>
 
                         <div className="upload-files-grid">
