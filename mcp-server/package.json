@@ -1,0 +1,21 @@
+{
+  "name": "vidflow-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for VidFlow - exposes database tools for AI chatbot integration",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "dotenv": "^17.3.1",
+    "mongoose": "^9.2.1",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}
