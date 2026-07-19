@@ -6,6 +6,9 @@ import ApiResponse from "../utils/apiResponse.js"
 import asyncHandler from "../utils/asyncHandler.js"
 import uploadOnCloudinary from "../utils/claudinary.js"
 import { deleteFromCloudinaryByUrl } from "../utils/deletefiles.js"
+import { User } from "../models/users.model.js"
+import { Like } from "../models/likes.models.js"
+import { Subscription } from "../models/subscriptions.model.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -105,15 +108,56 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!isValidObjectId(videoId)) {
         throw new ApiError(400, "invalid video id")
     }
-    const video = await Video.findById(videoId)
+    const video = await Video.findById(videoId).populate("owner", "userName fullName avatar")
     if (!video) {
         throw new ApiError(404, "invalid video id")
     }
+
+    // 1. Increment views on the video
+    video.views += 1;
+    await video.save({ validateBeforeSave: false });
+
+    // 2. Add video to logged-in user's watch history
+    if (req.user?._id) {
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $addToSet: { watchHistory: videoId }
+            }
+        );
+    }
+
+    // 3. Count likes on the video
+    const likesCount = await Like.countDocuments({ video: videoId });
+
+    // 4. Check if current user has liked this video
+    let isLiked = false;
+    if (req.user?._id) {
+        const userLike = await Like.findOne({ video: videoId, likedBy: req.user._id });
+        isLiked = !!userLike;
+    }
+
+    // 5. Check if current user is subscribed to the video owner
+    let isSubscribed = false;
+    if (req.user?._id && video.owner?._id) {
+        const sub = await Subscription.findOne({
+            subscriber: req.user._id,
+            channel: video.owner._id
+        });
+        isSubscribed = !!sub;
+    }
+
+    // Convert video to object and append the calculated fields
+    const videoData = video.toObject();
+    if (videoData.owner && typeof videoData.owner === "object") {
+        videoData.owner.isSubscribed = isSubscribed;
+    }
+    videoData.likesCount = likesCount;
+    videoData.isLiked = isLiked;
+
     return res
         .status(200)
-        .json(new ApiResponse(200, video, "video fetched successfully"))
-
-    //TODO: get video by id
+        .json(new ApiResponse(200, videoData, "video fetched successfully"))
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
