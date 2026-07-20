@@ -146,15 +146,6 @@ function openSseConnection() {
         };
     });
 }
-            _sessionId = postUrl.searchParams.get("sessionId");
-            resolve(_sessionId);
-        });
-
-        es.onerror = (err) => {
-            reject(new Error("SSE connection failed"));
-        };
-    });
-}
 
 async function callMcpTool(toolName, toolArgs) {
     await openSseConnection();
