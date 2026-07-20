@@ -23,9 +23,10 @@ export default function PlaylistsPage() {
         try {
             const res = await getUserPlaylists(user._id);
             setPlaylists(res.data.data || []);
-        } catch { /* silent */ }
+        } catch { toast.error("Failed to load playlists"); }
         finally { setLoading(false); }
     };
+
 
     const handleCreate = async (e) => {
         e.preventDefault();

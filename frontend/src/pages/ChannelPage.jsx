@@ -58,10 +58,11 @@ export default function ChannelPage() {
                     <p className="channel-username">@{channel.userName}</p>
                     <div className="channel-stats">
                         <FiUsers size={14} />
-                        <span>{channel.subscribersCount || 0} subscribers</span>
+                        <span>{channel.subscriberCount || 0} subscribers</span>
                         <span>·</span>
-                        <span>{channel.channelsSubscribedToCount || 0} subscriptions</span>
+                        <span>{channel.subscribedToCount || 0} subscriptions</span>
                     </div>
+
                 </div>
                 {user?._id !== channel._id && (
                     <button className={`btn ${subscribed ? "btn-secondary" : "btn-primary"}`} onClick={handleSubscribe}>

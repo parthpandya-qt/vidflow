@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 import "./ChatWidget.css";
 
-const MCP_BASE = "http://localhost:4001";
+const MCP_BASE = import.meta.env.VITE_MCP_BASE_URL || "http://localhost:4001";
 
 // ── Suggested prompts shown when chat is empty ────────────────────────────────
 const SUGGESTIONS = [
     "Search for JavaScript tutorials",
-    "Show me channel stats for testuser2",
+    "Show me my channel stats",
     "What's in my watch history?",
     "Get comments on a video",
 ];
@@ -66,13 +67,13 @@ function formatMcpResponse(text) {
 }
 
 // ── Natural language → tool call mapping ──────────────────────────────────────
-function parseIntent(message) {
+function parseIntent(message, currentUsername = "testuser2") {
     const msg = message.toLowerCase().trim();
 
     // post_tweet
     const tweetMatch = msg.match(/(?:post|tweet|send)\s+(?:a\s+)?(?:tweet|post)(?:\s+for\s+@?(\w+))?\s*[:"']?\s*(.+)/i);
     if (tweetMatch) {
-        return { tool: "post_tweet", args: { username: tweetMatch[1] || "testuser2", content: tweetMatch[2] || message } };
+        return { tool: "post_tweet", args: { username: tweetMatch[1] || currentUsername, content: tweetMatch[2] || message } };
     }
 
     // get_channel_stats
@@ -80,11 +81,14 @@ function parseIntent(message) {
     if (statsMatch) {
         return { tool: "get_channel_stats", args: { username: statsMatch[1] } };
     }
+    if (msg.includes("my channel stats") || msg.includes("my stats")) {
+        return { tool: "get_channel_stats", args: { username: currentUsername } };
+    }
 
     // get_watch_history
     if (msg.includes("watch history") || msg.includes("what i watched") || msg.includes("history")) {
         const userMatch = msg.match(/(?:for|of)\s+@?(\w+)/i);
-        return { tool: "get_watch_history", args: { username: userMatch?.[1] || "testuser2", limit: 10 } };
+        return { tool: "get_watch_history", args: { username: userMatch?.[1] || currentUsername, limit: 10 } };
     }
 
     // get_video_comments
@@ -108,19 +112,19 @@ let _msgIdCounter = 1;
 
 function openSseConnection() {
     return new Promise((resolve, reject) => {
-        if (_sseEventSource && _sseEventSource.readyState !== EventSource.CLOSED) {
+        if (_sseEventSource && _sseEventSource.readyState === EventSource.OPEN && _sessionId) {
             resolve(_sessionId);
             return;
+        }
+        if (_sseEventSource) {
+            try { _sseEventSource.close(); } catch {}
         }
         const es = new EventSource(`${MCP_BASE}/sse`);
         _sseEventSource = es;
 
-        es.addEventListener("open", () => { /* wait for endpoint event */ });
-
         es.addEventListener("message", (evt) => {
             try {
                 const data = JSON.parse(evt.data);
-                // MCP response: { id, result } or { id, error }
                 const pending = _pendingRequests.get(data.id);
                 if (pending) {
                     _pendingRequests.delete(data.id);
@@ -130,9 +134,18 @@ function openSseConnection() {
             } catch { /* ignore */ }
         });
 
-        // The SDK sends an "endpoint" event with the POST URL (includes sessionId)
         es.addEventListener("endpoint", (evt) => {
             const postUrl = new URL(evt.data, MCP_BASE);
+            _sessionId = postUrl.searchParams.get("sessionId");
+            resolve(_sessionId);
+        });
+
+        es.onerror = (err) => {
+            _sessionId = null;
+            reject(new Error("SSE connection failed"));
+        };
+    });
+}
             _sessionId = postUrl.searchParams.get("sessionId");
             resolve(_sessionId);
         });
@@ -178,6 +191,7 @@ async function callMcpTool(toolName, toolArgs) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function ChatWidget() {
+    const { user } = useAuth();
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([
         { id: 0, role: "assistant", text: "👋 Hi! I'm the **VidFlow AI assistant**. I can search videos, show channel stats, fetch your watch history, and more!" }
@@ -211,7 +225,7 @@ export default function ChatWidget() {
         setTyping(true);
 
         try {
-            const intent = parseIntent(userText);
+            const intent = parseIntent(userText, user?.userName);
             const result = await callMcpTool(intent.tool, intent.args);
 
             // result.content is an array of { type, text } from the MCP SDK
@@ -224,7 +238,7 @@ export default function ChatWidget() {
         } finally {
             setTyping(false);
         }
-    }, [input, addMessage]);
+    }, [input, addMessage, user?.userName]);
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
